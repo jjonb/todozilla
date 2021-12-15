@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Dimensions,
   FlatList,
-  Pressable,
 } from "react-native";
 import { getDatabase, ref, push, set, onValue } from "firebase/database";
 import { AuthContext } from "../context/AuthContext";
@@ -18,9 +17,9 @@ const Home = (props) => {
   const { auth, userID } = useContext(AuthContext);
 
   const db = getDatabase();
-  const allRef = ref(db, "profiles/");
-  const userRef = ref(db, "profiles/" + userID);
-  const taskListRef = ref(db, "profiles/" + userID + "/tasks/");
+  const scoreRef = ref(db, "scores/");
+  const userScoreRef = ref(db, "scores/" + userID);
+  const taskListRef = ref(db, "tasks/" + userID);
   const newTaskRef = push(taskListRef);
 
   const [highScore, setHighScore] = useState(0);
@@ -46,7 +45,7 @@ const Home = (props) => {
   }, []);
 
   useEffect(() => {
-    return onValue(userRef, (snapshot) => {
+    return onValue(userScoreRef, (snapshot) => {
       if (snapshot.val() !== null) {
         const data = snapshot.val();
         setCurrentScore(data.currentScore);
@@ -57,7 +56,7 @@ const Home = (props) => {
   }, []);
 
   useEffect(() => {
-    return onValue(allRef, (snapshot) => {
+    return onValue(scoreRef, (snapshot) => {
       if (snapshot.val() !== null) {
         const data = snapshot.val();
 
@@ -72,7 +71,6 @@ const Home = (props) => {
         }
 
         result.map(myFunction);
-
         setHighScore(highScore);
       } else {
         setHighScore(0);
@@ -114,7 +112,7 @@ const Home = (props) => {
       <View style={{ width: width * 0.8, height: 500 }}>
         <FlatList
           data={tasks}
-          renderItem={({ item, index }) => (
+          renderItem={({ item }) => (
             <Task
               item={item}
               db={db}

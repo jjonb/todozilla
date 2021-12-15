@@ -34,7 +34,7 @@ export const AuthProvider = (props) => {
           payload.password
         ).then((data) => {
           const db = getDatabase();
-          const reference = ref(db, "profiles/" + data.user.uid);
+          const reference = ref(db, "scores/" + data.user.uid);
           set(reference, {
             name: payload.name,
             currentScore: 0,
