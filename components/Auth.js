@@ -5,10 +5,12 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { AuthContext } from "../context/AuthContext";
 
 const Auth = (props) => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -24,6 +26,12 @@ const Auth = (props) => {
   return (
     <View style={styles.container}>
       <Text>Log in or Register</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="(For Register) First Name"
+        onChangeText={setName}
+        value={name}
+      />
       <TextInput
         style={styles.input}
         placeholder="E-mail"
@@ -47,12 +55,18 @@ const Auth = (props) => {
         <Text>Log in</Text>
       </TouchableOpacity>
       <TouchableOpacity
-        onPress={() =>
+        onPress={() => {
+          if (name === "") {
+            Alert.alert("Please enter your name.");
+            return;
+          }
+
           dispatchUserEvent("REGISTER", {
+            name: name,
             email: email,
             password: password,
-          })
-        }
+          });
+        }}
       >
         <Text>Register</Text>
       </TouchableOpacity>

@@ -7,14 +7,19 @@ import {
   StyleSheet,
   Dimensions,
   FlatList,
+  Pressable,
 } from "react-native";
 import { getDatabase, ref, push, set, onValue } from "firebase/database";
 import { AuthContext } from "../context/AuthContext";
+
+import Task from "./Task.js";
 
 const Home = (props) => {
   const { auth, userID } = useContext(AuthContext);
 
   const db = getDatabase();
+  const allRef = ref(db, "profiles/");
+  const userRef = ref(db, "profiles/" + userID);
   const taskListRef = ref(db, "profiles/" + userID + "/tasks/");
   const newTaskRef = push(taskListRef);
 
@@ -26,6 +31,7 @@ const Home = (props) => {
 
   const { width } = Dimensions.get("window");
 
+  //retrieves tasks from database and updates if any changes are made
   useEffect(() => {
     return onValue(taskListRef, (snapshot) => {
       if (snapshot.val() !== null) {
@@ -35,6 +41,41 @@ const Home = (props) => {
         setTasks(result);
       } else {
         setTasks([]);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    return onValue(userRef, (snapshot) => {
+      if (snapshot.val() !== null) {
+        const data = snapshot.val();
+        setCurrentScore(data.currentScore);
+      } else {
+        setCurrentScore(0);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    return onValue(allRef, (snapshot) => {
+      if (snapshot.val() !== null) {
+        const data = snapshot.val();
+
+        let result = Object.keys(data).map((key) => data[key]);
+
+        let highScore = 0;
+
+        function myFunction(item) {
+          if (item.currentScore > highScore) {
+            highScore = item.currentScore;
+          }
+        }
+
+        result.map(myFunction);
+
+        setHighScore(highScore);
+      } else {
+        setHighScore(0);
       }
     });
   }, []);
@@ -50,33 +91,37 @@ const Home = (props) => {
     return () => {};
   }, [userID]);
 
+  //adds task to database
   const onSubmit = (name) => {
     if (name === "") {
       return;
     }
 
     set(newTaskRef, {
+      id: newTaskRef.key,
       name: name,
       complete: false,
+      pointGiven: false,
     });
-  };
 
-  const renderItem = ({ item }) => {
-    return (
-      <View>
-        <Text>{item.name}</Text>
-      </View>
-    );
+    setTaskName("");
   };
 
   return (
     <View style={styles.container}>
       <Text>Highest Score: {highScore}</Text>
       <Text>Current Score: {currentScore}</Text>
-      <View style={{ width: width * 0.8 }}>
+      <View style={{ width: width * 0.8, height: 500 }}>
         <FlatList
           data={tasks}
-          renderItem={renderItem}
+          renderItem={({ item, index }) => (
+            <Task
+              item={item}
+              db={db}
+              userID={userID}
+              currentScore={currentScore}
+            />
+          )}
           keyExtractor={(item) => tasks.indexOf(item)}
         />
       </View>
@@ -100,6 +145,12 @@ const Home = (props) => {
           <Text>Add</Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => props.navigation.navigate("Score")}
+      >
+        <Text>View Leaderboard</Text>
+      </TouchableOpacity>
     </View>
   );
 };

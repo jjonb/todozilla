@@ -28,7 +28,18 @@ export const AuthProvider = (props) => {
   const dispatchUserEvent = (action, payload) => {
     switch (action) {
       case "REGISTER":
-        createUserWithEmailAndPassword(auth, payload.email, payload.password);
+        createUserWithEmailAndPassword(
+          auth,
+          payload.email,
+          payload.password
+        ).then((data) => {
+          const db = getDatabase();
+          const reference = ref(db, "profiles/" + data.user.uid);
+          set(reference, {
+            name: payload.name,
+            currentScore: 0,
+          });
+        });
         break;
       case "LOGIN":
         signInWithEmailAndPassword(auth, payload.email, payload.password);

@@ -9,6 +9,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import Auth from "./components/Auth";
 import Home from "./components/Home";
 import Score from "./components/Score";
+import Styles from "./components/Styles";
 
 const Stack = createNativeStackNavigator();
 
