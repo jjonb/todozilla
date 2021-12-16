@@ -1,27 +1,12 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  Pressable,
-} from "react-native";
+import { View, Text, TextInput, Pressable } from "react-native";
 //import styles from "Styles.js";
-import {
-  ref,
-  push,
-  set,
-  onValue,
-  update,
-  remove,
-  get,
-  child,
-} from "firebase/database";
+import { ref, update, remove } from "firebase/database";
 
 const Task = (props) => {
   const [text, onChangeText] = useState("");
   const [toggleEdit, setToggleEdit] = useState(false);
+  const userScoreRef = ref(props.db, "scores/" + props.userID);
 
   //updates task name
   const onChangeSubmit = (name, taskID) => {
@@ -29,10 +14,7 @@ const Task = (props) => {
       return;
     }
 
-    const editTaskRef = ref(
-      props.db,
-      "profiles/" + props.userID + "/tasks/" + taskID
-    );
+    const editTaskRef = ref(props.db, "tasks/" + props.userID + "/" + taskID);
 
     update(editTaskRef, {
       name: name,
@@ -40,12 +22,7 @@ const Task = (props) => {
   };
 
   const handleComplete = (taskID) => {
-    const taskRef = ref(
-      props.db,
-      "profiles/" + props.userID + "/tasks/" + taskID
-    );
-
-    const userRef = ref(props.db, "profiles/" + props.userID);
+    const taskRef = ref(props.db, "tasks/" + props.userID + "/" + taskID);
 
     update(taskRef, {
       pointGiven: true,
@@ -53,20 +30,16 @@ const Task = (props) => {
     });
 
     if (!props.item.pointGiven) {
-      update(userRef, { currentScore: props.currentScore + 1 });
+      update(userScoreRef, { currentScore: props.currentScore + 1 });
     }
   };
 
   //deletes a task
   const deleteTask = (taskID) => {
-    const taskRef = ref(
-      props.db,
-      "profiles/" + props.userID + "/tasks/" + taskID
-    );
-    const userRef = ref(props.db, "profiles/" + props.userID);
+    const taskRef = ref(props.db, "tasks/" + props.userID + "/" + taskID);
 
     if (props.item.pointGiven) {
-      update(userRef, { currentScore: props.currentScore - 1 });
+      update(userScoreRef, { currentScore: props.currentScore - 1 });
     }
 
     remove(taskRef);

@@ -6,30 +6,24 @@ import {
   FlatList,
   Dimensions,
 } from "react-native";
-import { getDatabase, ref, push, set, onValue } from "firebase/database";
+import { getDatabase, ref, onValue } from "firebase/database";
 
 const Score = (props) => {
   const db = getDatabase();
-  const allRef = ref(db, "profiles/");
+  const scoreRef = ref(db, "scores/");
 
   const [highScoreList, setHighScoreList] = useState([]);
 
   const { width } = Dimensions.get("window");
 
   useEffect(() => {
-    return onValue(allRef, (snapshot) => {
+    return onValue(scoreRef, (snapshot) => {
       if (snapshot.val() !== null) {
         const data = snapshot.val();
 
-        let arr = [];
+        let arr = Object.keys(data).map((key) => data[key]);
 
-        for (var key in data) {
-          var obj = data[key];
-
-          arr.push({ name: obj.name, currentScore: obj.currentScore });
-        }
-
-        arr.sort((a, b) => a.currentScore > b.currentScore);
+        arr.sort((a, b) => a.currentScore < b.currentScore);
 
         setHighScoreList(arr);
       } else {
