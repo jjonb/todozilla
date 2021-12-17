@@ -21,9 +21,9 @@ const Score = (props) => {
       if (snapshot.val() !== null) {
         const data = snapshot.val();
 
-        let arr = Object.keys(data).map((key) => data[key]);
-
-        arr.sort((a, b) => a.currentScore < b.currentScore);
+        let arr = Object.keys(data)
+          .map((key) => data[key])
+          .sort((a, b) => a.currentScore < b.currentScore);
 
         setHighScoreList(arr);
       } else {
@@ -32,11 +32,11 @@ const Score = (props) => {
     });
   }, []);
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item, index }) => {
     return (
       <View>
         <Text>
-          {item.name}: {item.currentScore}
+          {index + 1}. {item.name} - {item.currentScore}
         </Text>
       </View>
     );
