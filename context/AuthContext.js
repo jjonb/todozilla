@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   getAuth,
   onAuthStateChanged,
@@ -7,11 +7,13 @@ import {
 } from "firebase/auth";
 import { getDatabase, ref, set } from "firebase/database";
 
-export const AuthContext = React.createContext();
+const AuthContext = React.createContext();
 
-export const AuthProvider = (props) => {
+const AuthProvider = (props) => {
   const auth = getAuth();
   const [userID, setUserID] = useState("");
+
+  const [isLoading, setLoading] = useState(false);
 
   useEffect(() => {
     // Listen for authentication state to change.
@@ -28,21 +30,24 @@ export const AuthProvider = (props) => {
   const dispatchUserEvent = (action, payload) => {
     switch (action) {
       case "REGISTER":
-        createUserWithEmailAndPassword(
-          auth,
-          payload.email,
-          payload.password
-        ).then((data) => {
-          const db = getDatabase();
-          const reference = ref(db, "scores/" + data.user.uid);
-          set(reference, {
-            name: payload.name,
-            currentScore: 0,
-          });
-        });
+        setLoading(true);
+        createUserWithEmailAndPassword(auth, payload.email, payload.password)
+          .then((data) => {
+            const db = getDatabase();
+            const reference = ref(db, "scores/" + data.user.uid);
+            set(reference, {
+              name: payload.name,
+              currentScore: 0,
+            });
+            setLoading(false);
+          })
+          .catch((err) => setLoading(false));
         break;
       case "LOGIN":
-        signInWithEmailAndPassword(auth, payload.email, payload.password);
+        setLoading(true);
+        signInWithEmailAndPassword(auth, payload.email, payload.password)
+          .then((data) => setLoading(false))
+          .catch((err) => setLoading(false));
         break;
       default:
         break;
@@ -50,8 +55,14 @@ export const AuthProvider = (props) => {
   };
 
   return (
-    <AuthContext.Provider value={{ userID, auth, dispatchUserEvent }}>
+    <AuthContext.Provider
+      value={{ userID, auth, dispatchUserEvent, isLoading }}
+    >
       {props.children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);
+
+export default AuthProvider;

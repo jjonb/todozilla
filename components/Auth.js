@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,8 +6,22 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Dimensions,
+  Image,
+  ImageBackground,
+  Keyboard,
 } from "react-native";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
+
+import Loading from "./Loading";
+
+import {
+  MaterialIcons,
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
+
+const { width } = Dimensions.get("window");
 
 const Auth = (props) => {
   const [authScreen, setAuthScreen] = useState("Login");
@@ -17,8 +31,11 @@ const Auth = (props) => {
   const [password, setPassword] = useState("");
   const [passwordCheck, setPasswordCheck] = useState("");
 
-  const { userID, dispatchUserEvent } = useContext(AuthContext);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
+  const { userID, dispatchUserEvent, isLoading } = useAuth();
+
+  //checks userID in real-time and navigates to screen accordingly
   useEffect(() => {
     if (userID !== "") {
       props.navigation.replace("Home");
@@ -26,100 +43,198 @@ const Auth = (props) => {
     return () => {};
   }, [userID]);
 
-  return (
-    <View style={styles.container}>
-      {authScreen === "Register" ? (
-        <TextInput
-          placeholder="First Name"
-          onChangeText={setName}
-          value={name}
-          style={styles.input}
-        />
-      ) : (
-        <></>
-      )}
-      <TextInput
-        style={styles.input}
-        placeholder="E-mail"
-        onChangeText={setEmail}
-        value={email}
-      />
-      <TextInput
-        secureTextEntry={true}
-        style={styles.input}
-        placeholder="Password"
-        onChangeText={setPassword}
-        value={password}
-      />
-      {authScreen === "Register" ? (
-        <TextInput
-          secureTextEntry={true}
-          placeholder="Re-Type Password"
-          onChangeText={setPasswordCheck}
-          value={passwordCheck}
-          style={styles.input}
-        />
-      ) : (
-        <></>
-      )}
-      <TouchableOpacity
-        disabled={
-          authScreen === "Register" && password === "" && passwordCheck === ""
-        }
-        onPress={
-          authScreen === "Register"
-            ? () => {
-                if (passwordCheck === password) {
-                  dispatchUserEvent("REGISTER", {
-                    name: name,
-                    email: email,
-                    password: password,
-                  });
-                } else {
-                  Alert.alert("Error", "Passwords do not match.", [
-                    { text: "OK" },
-                  ]);
-                }
-              }
-            : () => {
-                if (email !== "" && password !== "") {
-                  dispatchUserEvent("LOGIN", {
-                    email: email,
-                    password: password,
-                  });
-                } else {
-                  Alert.alert("Error", "Please input your information.", [
-                    { text: "OK" },
-                  ]);
-                }
-              }
-        }
-      >
-        <Text>{authScreen === "Register" ? "Register" : "Login"}</Text>
-      </TouchableOpacity>
-      {authScreen === "Register" ? (
-        <Text style={{ color: "black" }}>
-          Already have an account?{" "}
-          <Text
-            style={{ color: "blue" }}
-            onPress={() => setAuthScreen("Login")}
+  useEffect(() => {
+    Keyboard.addListener("keyboardDidShow", _keyboardDidShow);
+    Keyboard.addListener("keyboardDidHide", _keyboardDidHide);
+
+    // cleanup function
+    return () => {
+      Keyboard.removeListener("keyboardDidShow", _keyboardDidShow);
+      Keyboard.removeListener("keyboardDidHide", _keyboardDidHide);
+    };
+  }, []);
+
+  const _keyboardDidShow = (e) =>
+    setKeyboardHeight(e.endCoordinates.height / 2);
+  const _keyboardDidHide = () => setKeyboardHeight(0);
+
+  if (isLoading) {
+    return <Loading />;
+  } else {
+    return (
+      <View style={styles.container}>
+        <View
+          style={{
+            width: 433,
+            height: 250,
+            alignItems: "center",
+          }}
+        >
+          <ImageBackground
+            source={require("../assets/logo_circles.png")}
+            style={{ width: 433, height: 428, left: -125, top: -200 }}
+            resizeMode={"contain"}
           >
-            Log In
-          </Text>
+            <Image
+              style={{ width: "100%", height: 50, left: 125, top: 300 }}
+              resizeMode={"contain"}
+              source={require("../assets/logo.png")}
+            />
+          </ImageBackground>
+        </View>
+
+        <Text style={{ fontSize: 30, fontFamily: "Karla-Regular" }}>
+          Welcome,
         </Text>
-      ) : (
-        <Text style={{ color: "black" }}>
-          Don't have an account?{" "}
+        <Text
+          style={{
+            marginBottom: 10,
+            marginTop: 2,
+            fontSize: 12,
+            fontFamily: "Karla-Regular",
+          }}
+        >
+          {authScreen === "Register"
+            ? "Sign up to Continue"
+            : "Login to Continue"}
+        </Text>
+
+        {authScreen === "Register" ? (
+          <View style={styles.inputContainer}>
+            <MaterialCommunityIcons
+              style={{ position: "absolute", left: 10 }}
+              name="account-edit-outline"
+              size={30}
+              color="black"
+            />
+            <TextInput
+              placeholder="First Name"
+              onChangeText={setName}
+              value={name}
+              style={styles.input}
+            />
+          </View>
+        ) : (
+          <></>
+        )}
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="E-mail"
+            onChangeText={setEmail}
+            value={email}
+          />
+          <MaterialIcons
+            style={{ position: "absolute", left: 10 }}
+            name="mail-outline"
+            size={30}
+            color="black"
+          />
+        </View>
+        <View style={styles.inputContainer}>
+          <Ionicons
+            style={{ position: "absolute", left: 10 }}
+            name="key-outline"
+            size={30}
+            color="black"
+          />
+          <TextInput
+            secureTextEntry={true}
+            style={styles.input}
+            placeholder="Password"
+            onChangeText={setPassword}
+            value={password}
+          />
+        </View>
+        {authScreen === "Register" ? (
+          <View style={styles.inputContainer}>
+            <Ionicons
+              style={{ position: "absolute", left: 10 }}
+              name="lock-closed-outline"
+              size={30}
+              color="black"
+            />
+            <TextInput
+              secureTextEntry={true}
+              placeholder="Confirm Password"
+              onChangeText={setPasswordCheck}
+              value={passwordCheck}
+              style={styles.input}
+            />
+          </View>
+        ) : (
+          <></>
+        )}
+        <TouchableOpacity
+          style={styles.actionButton}
+          disabled={
+            authScreen === "Register" && password === "" && passwordCheck === ""
+          }
+          onPress={
+            authScreen === "Register"
+              ? () => {
+                  if (passwordCheck === password) {
+                    dispatchUserEvent("REGISTER", {
+                      name: name,
+                      email: email,
+                      password: password,
+                    });
+                  } else {
+                    Alert.alert("Error", "Passwords do not match.", [
+                      { text: "OK" },
+                    ]);
+                  }
+                }
+              : () => {
+                  if (email !== "" && password !== "") {
+                    dispatchUserEvent("LOGIN", {
+                      email: email,
+                      password: password,
+                    });
+                  } else {
+                    Alert.alert("Error", "Please input your information.", [
+                      { text: "OK" },
+                    ]);
+                  }
+                }
+          }
+        >
           <Text
-            style={{ color: "blue" }}
-            onPress={() => setAuthScreen("Register")}
+            style={{
+              textAlign: "center",
+              fontSize: 12,
+              fontFamily: "Karla-Regular",
+              color: "white",
+            }}
           >
-            Sign Up
+            {authScreen === "Register" ? "Sign Up" : "Login"}
           </Text>
-        </Text>
-      )}
-    </View>
-  );
+        </TouchableOpacity>
+        {authScreen === "Register" ? (
+          <Text style={{ color: "black", fontFamily: "Karla-Regular" }}>
+            Already have an account?{" "}
+            <Text
+              style={{ color: "black", fontFamily: "Karla-Bold" }}
+              onPress={() => setAuthScreen("Login")}
+            >
+              Login
+            </Text>
+          </Text>
+        ) : (
+          <Text style={{ color: "black", fontFamily: "Karla-Regular" }}>
+            Don't have an account?{" "}
+            <Text
+              style={{ color: "black", fontFamily: "Karla-Bold" }}
+              onPress={() => setAuthScreen("Register")}
+            >
+              Sign Up
+            </Text>
+          </Text>
+        )}
+        <View style={{ height: keyboardHeight }}></View>
+      </View>
+    );
+  }
 };
 
 export default Auth;
@@ -127,14 +242,37 @@ export default Auth;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E8E8CC",
     alignItems: "center",
     justifyContent: "center",
   },
-
-  input: {
-    borderWidth: 2,
-    borderColor: "#116530",
+  inputContainer: {
+    justifyContent: "center",
+    backgroundColor: "white",
+    borderRadius: 10,
+    marginVertical: 7.5,
     marginBottom: 10,
+    elevation: 15,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "black",
+    borderRadius: 10,
+    width: width * 0.75,
+    textAlign: "center",
+    paddingVertical: 5,
+    backgroundColor: "rgba(0,0,0,0)",
+    fontSize: 12,
+    fontFamily: "Karla-Regular",
+  },
+  actionButton: {
+    padding: 10,
+    elevation: 15,
+    shadowColor: "#000",
+    backgroundColor: "#2F56F8",
+    borderRadius: 15,
+    width: width * 0.375,
+    marginTop: 7.5,
+    marginBottom: 15,
+    fontFamily: "Karla-Regular",
   },
 });

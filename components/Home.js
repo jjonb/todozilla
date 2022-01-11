@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,12 +9,12 @@ import {
   FlatList,
 } from "react-native";
 import { getDatabase, ref, push, set, onValue } from "firebase/database";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 import Task from "./Task.js";
 
 const Home = (props) => {
-  const { auth, userID } = useContext(AuthContext);
+  const { auth, userID } = useAuth();
 
   const db = getDatabase();
   const scoreRef = ref(db, "scores/");
@@ -44,6 +44,7 @@ const Home = (props) => {
     });
   }, []);
 
+  //sets the user's current score
   useEffect(() => {
     return onValue(userScoreRef, (snapshot) => {
       if (snapshot.val() !== null) {
@@ -55,6 +56,7 @@ const Home = (props) => {
     });
   }, []);
 
+  //sets the highest score out of every user in database
   useEffect(() => {
     return onValue(scoreRef, (snapshot) => {
       if (snapshot.val() !== null) {
@@ -64,13 +66,12 @@ const Home = (props) => {
 
         let highScore = 0;
 
-        function myFunction(item) {
+        result.map((item) => {
           if (item.currentScore > highScore) {
             highScore = item.currentScore;
           }
-        }
+        });
 
-        result.map(myFunction);
         setHighScore(highScore);
       } else {
         setHighScore(0);
