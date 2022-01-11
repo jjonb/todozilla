@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable } from "react-native";
-//import styles from "Styles.js";
 import { ref, update, remove } from "firebase/database";
 
 const Task = (props) => {
@@ -29,18 +28,13 @@ const Task = (props) => {
       complete: !props.item.complete,
     });
 
-    if (!props.item.pointGiven) {
+    !props.item.pointGiven &&
       update(userScoreRef, { currentScore: props.currentScore + 1 });
-    }
   };
 
   //deletes a task
   const deleteTask = (taskID) => {
     const taskRef = ref(props.db, "tasks/" + props.userID + "/" + taskID);
-
-    if (props.item.pointGiven) {
-      update(userScoreRef, { currentScore: props.currentScore - 1 });
-    }
 
     remove(taskRef);
   };
