@@ -17,14 +17,13 @@ const AuthProvider = (props) => {
 
   useEffect(() => {
     // Listen for authentication state to change.
-    onAuthStateChanged(auth, (user) => {
+    return onAuthStateChanged(auth, (user) => {
       if (user != null) {
         setUserID(user.uid);
       } else {
         setUserID("");
       }
     });
-    return () => {};
   }, []);
 
   const dispatchUserEvent = (action, payload) => {
@@ -56,7 +55,7 @@ const AuthProvider = (props) => {
 
   return (
     <AuthContext.Provider
-      value={{ userID, auth, dispatchUserEvent, isLoading }}
+      value={{ userID, auth, dispatchUserEvent, isLoading, setLoading }}
     >
       {props.children}
     </AuthContext.Provider>

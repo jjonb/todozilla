@@ -1,25 +1,9 @@
 import React from "react";
-import {
-  View,
-  StyleSheet,
-  ImageBackground,
-  Image,
-  ActivityIndicator,
-} from "react-native";
+import { View, StyleSheet, ImageBackground, Image } from "react-native";
 
-import {
-  BallIndicator,
-  BarIndicator,
-  DotIndicator,
-  MaterialIndicator,
-  PacmanIndicator,
-  PulseIndicator,
-  SkypeIndicator,
-  UIActivityIndicator,
-  WaveIndicator,
-} from "react-native-indicators";
+import { UIActivityIndicator } from "react-native-indicators";
 
-const Loading = (props) => {
+const Loading = () => {
   return (
     <View style={styles.container}>
       <View
@@ -36,13 +20,15 @@ const Loading = (props) => {
         ></ImageBackground>
       </View>
 
-      <Image
-        style={{ width: "100%", height: 50 }}
-        resizeMode={"contain"}
-        source={require("../assets/loading_logo.png")}
-      />
+      <View style={{ width: "100%", height: 120 }}>
+        <Image
+          style={{ width: "100%", height: 50 }}
+          resizeMode={"contain"}
+          source={require("../assets/loading_logo.png")}
+        />
 
-      <UIActivityIndicator color="black" size={60} />
+        <UIActivityIndicator color="black" size={60} />
+      </View>
 
       <View
         style={{
