@@ -33,7 +33,7 @@ const Auth = (props) => {
 
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  const { userID, dispatchUserEvent, isLoading } = useAuth();
+  const { userID, dispatchUserEvent, isLoading, setLoading } = useAuth();
 
   //checks userID in real-time and navigates to screen accordingly
   useEffect(() => {
@@ -55,7 +55,7 @@ const Auth = (props) => {
   }, []);
 
   const _keyboardDidShow = (e) =>
-    setKeyboardHeight(e.endCoordinates.height / 2);
+    setKeyboardHeight(e.endCoordinates.height * 0.75);
   const _keyboardDidHide = () => setKeyboardHeight(0);
 
   if (isLoading) {
@@ -83,7 +83,12 @@ const Auth = (props) => {
           </ImageBackground>
         </View>
 
-        <Text style={{ fontSize: 30, fontFamily: "Karla-Regular" }}>
+        <Text
+          style={{
+            fontSize: 30,
+            fontFamily: "Karla-Regular",
+          }}
+        >
           Welcome,
         </Text>
         <Text
@@ -118,17 +123,17 @@ const Auth = (props) => {
           <></>
         )}
         <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="E-mail"
-            onChangeText={setEmail}
-            value={email}
-          />
           <MaterialIcons
             style={{ position: "absolute", left: 10 }}
             name="mail-outline"
             size={30}
             color="black"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="E-mail"
+            onChangeText={setEmail}
+            value={email}
           />
         </View>
         <View style={styles.inputContainer}>

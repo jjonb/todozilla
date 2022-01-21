@@ -1,11 +1,20 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
 import { ref, update, remove } from "firebase/database";
+import { FontAwesome } from "@expo/vector-icons";
 
 const Task = (props) => {
   const [text, onChangeText] = useState("");
   const [toggleEdit, setToggleEdit] = useState(false);
   const userScoreRef = ref(props.db, "scores/" + props.userID);
+  const { width } = Dimensions.get("window");
 
   //updates task name
   const onChangeSubmit = (name, taskID) => {
@@ -20,7 +29,12 @@ const Task = (props) => {
     });
   };
 
+  //handles points given when a task is marked true or false for completion
   const handleComplete = (taskID) => {
+    if (props.item.name == "") {
+      return;
+    }
+
     const taskRef = ref(props.db, "tasks/" + props.userID + "/" + taskID);
 
     update(taskRef, {
@@ -55,25 +69,80 @@ const Task = (props) => {
   };
 
   return (
-    <View>
-      <View style={{ flexDirection: "row" }}>
-        <Pressable onPress={() => handleComplete(props.item.id)}>
-          <Text>{props.item.complete ? "🆗" : "🟦"}</Text>
-        </Pressable>
+    <View
+      style={{
+        backgroundColor: "white",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: width * 0.9,
+        padding: 10,
+        borderRadius: 10,
+        marginHorizontal: 10,
+        marginVertical: 7.5,
+        elevation: 5,
+        height: 40,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <TouchableOpacity onPress={() => handleComplete(props.item.id)}>
+          {props.item.complete ? (
+            <View
+              style={{
+                borderRadius: 50,
+                width: 20,
+                height: 20,
+                backgroundColor: "#4BD37B",
+                borderColor: "black",
+                borderWidth: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <FontAwesome name="check" size={15} color="white" />
+            </View>
+          ) : (
+            <View
+              style={{
+                borderRadius: 50,
+                width: 20,
+                height: 20,
+                backgroundColor: "white",
+                borderColor: "black",
+                borderWidth: 1,
+              }}
+            ></View>
+          )}
+        </TouchableOpacity>
         <Pressable
           onLongPress={() => deleteTask(props.item.id)}
-          onPress={() => handleEdit()}
+          onPress={() => {
+            if (!props.item.complete) {
+              handleEdit();
+            }
+          }}
         >
-          <View>
+          <View style={{ marginLeft: 10 }}>
             {toggleEdit ? (
               <TextInput
+                style={{ fontFamily: "Karla-Regular", fontSize: 18 }}
                 autoFocus={true}
                 onChangeText={onChangeText}
                 value={text}
                 onSubmitEditing={() => handleEdit()}
               ></TextInput>
             ) : (
-              <Text>{props.item.name}</Text>
+              <Text
+                style={{
+                  textDecorationLine: props.item.complete
+                    ? "line-through"
+                    : "none",
+                  color: props.item.complete ? "gray" : "black",
+                  fontFamily: "Karla-Regular",
+                  fontSize: 18,
+                }}
+              >
+                {props.item.name}
+              </Text>
             )}
           </View>
         </Pressable>
