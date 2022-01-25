@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
+import { Alert } from "react-native";
 import {
   getAuth,
   onAuthStateChanged,
@@ -40,13 +41,19 @@ const AuthProvider = (props) => {
             });
             setLoading(false);
           })
-          .catch((err) => setLoading(false));
+          .catch((err) => {
+            setLoading(false);
+            Alert.alert(err.message);
+          });
         break;
       case "LOGIN":
         setLoading(true);
         signInWithEmailAndPassword(auth, payload.email, payload.password)
           .then((data) => setLoading(false))
-          .catch((err) => setLoading(false));
+          .catch((err) => {
+            setLoading(false);
+            Alert.alert(err.message);
+          });
         break;
       default:
         break;

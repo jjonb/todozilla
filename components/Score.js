@@ -15,11 +15,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { StatusBarHeight } from "../utils/StatusBarHeight";
 import { useAuth } from "../context/AuthContext";
 import { BlurView } from "expo-blur";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get("window");
 
 const Score = (props) => {
   const { auth, userID } = useAuth();
+  const insets = useSafeAreaInsets();
+
   const db = getDatabase();
   const scoreRef = ref(db, "scores/");
   const userScoreRef = ref(db, "scores/" + userID);
@@ -29,7 +32,7 @@ const Score = (props) => {
 
   // bounceValue will be used as the value for translateY. Initial Value: height of device
   const bounceValue = useRef(new Animated.Value(height)).current;
-  const [isHidden, setHidden] = useState(true);
+  const isHidden = useRef(true);
 
   const [currentScore, setCurrentScore] = useState(0);
 
@@ -64,19 +67,13 @@ const Score = (props) => {
   }, []);
 
   const toggleSubview = () => {
-    let toValue = height;
-
-    if (isHidden) {
-      toValue = 0;
-    }
-
     Animated.spring(bounceValue, {
-      toValue: toValue,
+      toValue: isHidden.current ? 0 : height,
       speed: 20,
       useNativeDriver: true,
     }).start();
 
-    setHidden(!isHidden);
+    isHidden.current = !isHidden.current;
   };
 
   const renderItem = ({ item, index }) => {
@@ -154,10 +151,10 @@ const Score = (props) => {
           />
 
           <Text style={{ fontFamily: "Poppins-Regular" }}>
-            {topThree[1] !== undefined ? topThree[1].name : "N/A"}
+            {topThree[1] !== undefined ? topThree[1].name : ""}
           </Text>
           <Text style={{ fontFamily: "Poppins-Regular" }}>
-            {topThree[1] !== undefined ? topThree[1].currentScore : "N/A"}
+            {topThree[1] !== undefined ? topThree[1].currentScore : ""}
           </Text>
         </View>
 
@@ -169,10 +166,10 @@ const Score = (props) => {
           />
 
           <Text style={{ fontFamily: "Poppins-Regular" }}>
-            {topThree[0] !== undefined ? topThree[0].name : "N/A"}
+            {topThree[0] !== undefined ? topThree[0].name : ""}
           </Text>
           <Text style={{ fontFamily: "Poppins-Regular" }}>
-            {topThree[0] !== undefined ? topThree[0].currentScore : "N/A"}
+            {topThree[0] !== undefined ? topThree[0].currentScore : ""}
           </Text>
         </View>
 
@@ -184,10 +181,10 @@ const Score = (props) => {
           />
 
           <Text style={{ fontFamily: "Poppins-Regular" }}>
-            {topThree[2] !== undefined ? topThree[2].name : "N/A"}
+            {topThree[2] !== undefined ? topThree[2].name : ""}
           </Text>
           <Text style={{ fontFamily: "Poppins-Regular" }}>
-            {topThree[2] !== undefined ? topThree[2].currentScore : "N/A"}
+            {topThree[2] !== undefined ? topThree[2].currentScore : ""}
           </Text>
         </View>
       </View>
@@ -209,7 +206,7 @@ const Score = (props) => {
         locations={[0.1, 0.5, 1]}
         style={{
           width: width,
-          height: 85,
+          height: insets.bottom + 85,
           flexDirection: "row",
           justifyContent: "space-between",
         }}
@@ -218,7 +215,12 @@ const Score = (props) => {
           <Image
             source={require("../assets/buttons/home-button.png")}
             resizeMode="contain"
-            style={{ width: 60, height: 60, marginTop: 20, marginLeft: 20 }}
+            style={{
+              width: 60,
+              height: 60,
+              marginTop: insets.bottom + 20,
+              marginLeft: 20,
+            }}
           />
         </TouchableOpacity>
 
@@ -234,7 +236,12 @@ const Score = (props) => {
           <Image
             source={require("../assets/buttons/sign-out-button.png")}
             resizeMode="contain"
-            style={{ width: 60, height: 60, marginTop: 20, marginRight: 20 }}
+            style={{
+              width: 60,
+              height: 60,
+              marginTop: insets.bottom + 20,
+              marginRight: 20,
+            }}
           />
         </TouchableOpacity>
       </LinearGradient>

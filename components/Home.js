@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,110 +9,143 @@ import {
   Image,
   Animated,
   Pressable,
+  Keyboard,
+  Platform,
 } from "react-native";
-import { getDatabase, ref, push, set, onValue } from "firebase/database";
+import {
+  getDatabase,
+  ref,
+  push,
+  set,
+  onValue,
+  get,
+  child,
+} from "firebase/database";
 import { useAuth } from "../context/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBarHeight } from "../utils/StatusBarHeight";
 import { Feather, FontAwesome } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import Task from "./Task.js";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get("window");
 
 const Home = (props) => {
   const { auth, userID } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const db = getDatabase();
-  const scoreRef = ref(db, "scores/");
+  const dbRef = ref(db);
   const userNameRef = ref(db, "scores/" + userID);
   const taskListRef = ref(db, "tasks/" + userID);
   const newTaskRef = push(taskListRef);
 
   const [topThree, setTopThree] = useState([]);
-  const [currentScore, setCurrentScore] = useState(0);
+  const currentScore = useRef(0);
 
   const [UserName, setUserName] = useState("");
 
   // bounceValue will be used as the value for translateY. Initial Value: height of device
   const bounceValue = useRef(new Animated.Value(-height)).current;
-  const [isHidden, setHidden] = useState(true);
+  const isHidden = useRef(true);
+
+  // holds value for when keyboard is open/closed
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   const [tasks, setTasks] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
 
-  const toggleSubview = () => {
-    let toValue = -height;
+  const mainRenderItem = ({ item }) => (
+    <Task
+      item={item}
+      db={db}
+      userID={userID}
+      currentScore={currentScore}
+      tasks={tasks}
+      setTasks={setTasks}
+      completedTasks={completedTasks}
+      setCompletedTasks={setCompletedTasks}
+    />
+  );
 
-    if (isHidden) {
-      toValue = 0;
-    }
+  const keyExtractor = useCallback((item) => item.id.toString(), []);
+
+  const toggleSubview = () => {
+    isHidden.current &&
+      get(child(dbRef, "scores/"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+
+            let arr = Object.keys(data)
+              .map((key) => data[key])
+              .sort((a, b) => b.currentScore - a.currentScore);
+
+            setTopThree(arr.splice(0, 3));
+          } else {
+            setTopThree([]);
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
 
     Animated.spring(bounceValue, {
-      toValue: toValue,
+      toValue: isHidden.current ? 0 : -height,
       speed: 20,
       useNativeDriver: true,
     }).start();
 
-    setHidden(!isHidden);
+    isHidden.current = !isHidden.current;
   };
 
   //retrieves tasks from database and updates if any changes are made
   useEffect(() => {
-    return onValue(taskListRef, (snapshot) => {
-      if (snapshot.val() !== null) {
-        const data = snapshot.val();
-        let result = Object.keys(data).map((key) => data[key]);
+    return onValue(
+      taskListRef,
+      (snapshot) => {
+        if (snapshot.val() !== null) {
+          const data = snapshot.val();
+          let result = Object.keys(data).map((key) => data[key]);
 
-        let notFinishedTasks = [];
-        let finishedTasks = [];
+          let notFinishedTasks = [];
+          let finishedTasks = [];
 
-        result.map((item) => {
-          if (item.complete) {
-            finishedTasks.push(item);
-          } else {
-            notFinishedTasks.push(item);
-          }
-        });
+          result.map((item) => {
+            if (item.complete) {
+              finishedTasks.push(item);
+            } else {
+              notFinishedTasks.push(item);
+            }
+          });
 
-        setTasks(notFinishedTasks);
-        setCompletedTasks(finishedTasks);
-      } else {
-        setTasks([]);
-        setCompletedTasks([]);
-      }
-    });
+          setTasks(notFinishedTasks);
+          setCompletedTasks(finishedTasks);
+        } else {
+          setTasks([]);
+          setCompletedTasks([]);
+        }
+      },
+      { onlyOnce: true }
+    );
   }, []);
 
   //sets the user's current score
   useEffect(() => {
-    return onValue(userNameRef, (snapshot) => {
-      if (snapshot.val() !== null) {
-        const data = snapshot.val();
-        setUserName(data.name);
-        setCurrentScore(data.currentScore);
-      } else {
-        setUserName("User");
-        setCurrentScore(0);
-      }
-    });
-  }, []);
-
-  //sets the top three scores out of every user from database
-  useEffect(() => {
-    return onValue(scoreRef, (snapshot) => {
-      if (snapshot.val() !== null) {
-        const data = snapshot.val();
-
-        let arr = Object.keys(data)
-          .map((key) => data[key])
-          .sort((a, b) => b.currentScore - a.currentScore);
-
-        setTopThree(arr.splice(0, 3));
-      } else {
-        setTopThree([]);
-      }
-    });
+    return onValue(
+      userNameRef,
+      (snapshot) => {
+        if (snapshot.val() !== null) {
+          const data = snapshot.val();
+          setUserName(data.name);
+          currentScore.current = data.currentScore;
+        } else {
+          setUserName("User");
+        }
+      },
+      { onlyOnce: true }
+    );
   }, []);
 
   //checks on userID and executes when it changes
@@ -123,17 +156,47 @@ const Home = (props) => {
         routes: [{ name: "Auth" }],
       });
     }
-    return () => {};
   }, [userID]);
 
+  //checks to see if keyboard is open/closed; mainly for task visibility
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
+
   //adds task to database
-  const onSubmit = (name) => {
+  const onSubmit = () => {
     set(newTaskRef, {
       id: newTaskRef.key,
-      name: name,
+      name: "",
       complete: false,
       pointGiven: false,
     });
+
+    setTasks([
+      ...tasks,
+      {
+        id: newTaskRef.key,
+        name: "",
+        complete: false,
+        pointGiven: false,
+      },
+    ]);
   };
 
   return (
@@ -156,23 +219,29 @@ const Home = (props) => {
         <Text style={{ fontFamily: "Poppins-Regular", fontSize: 24 }}>
           {UserName !== "" ? `Welcome Back, ${UserName}!` : ""}
         </Text>
-        {!isHidden ? (
-          <></>
-        ) : (
-          <TouchableOpacity
-            onPress={toggleSubview}
-            style={{
-              position: "absolute",
-              bottom: 0,
-            }}
-          >
-            <FontAwesome name="caret-down" size={25} color="black" />
-          </TouchableOpacity>
-        )}
       </LinearGradient>
+      <View
+        style={{
+          position: "absolute",
+          top: 75,
+          width: width,
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      >
+        <TouchableOpacity onPress={toggleSubview}>
+          <FontAwesome name="caret-down" size={30} color="black" />
+        </TouchableOpacity>
+      </View>
 
       {tasks.length !== 0 || completedTasks.length !== 0 ? (
-        <View style={{ width: width, flex: 1 }}>
+        <View
+          style={{
+            width: width,
+            marginTop: 15,
+            flex: 1,
+          }}
+        >
           {tasks.length !== 0 ? (
             <>
               <Text
@@ -187,21 +256,18 @@ const Home = (props) => {
               <View
                 style={{
                   width: width,
-                  flex: 1,
+                  height:
+                    completedTasks.length !== 0 || isKeyboardVisible
+                      ? height * 0.28
+                      : height * 0.66,
                   alignItems: "center",
                 }}
               >
                 <FlatList
                   data={tasks}
-                  renderItem={({ item }) => (
-                    <Task
-                      item={item}
-                      db={db}
-                      userID={userID}
-                      currentScore={currentScore}
-                    />
-                  )}
-                  keyExtractor={(item) => tasks.indexOf(item)}
+                  removeClippedSubviews={false}
+                  renderItem={mainRenderItem}
+                  keyExtractor={keyExtractor}
                 />
               </View>
             </>
@@ -222,21 +288,14 @@ const Home = (props) => {
               <View
                 style={{
                   width: width,
-                  flex: 1,
+                  height: tasks.length !== 0 ? height * 0.28 : height * 0.66,
                   alignItems: "center",
                 }}
               >
                 <FlatList
                   data={completedTasks}
-                  renderItem={({ item }) => (
-                    <Task
-                      item={item}
-                      db={db}
-                      userID={userID}
-                      currentScore={currentScore}
-                    />
-                  )}
-                  keyExtractor={(item) => completedTasks.indexOf(item)}
+                  renderItem={mainRenderItem}
+                  keyExtractor={keyExtractor}
                 />
               </View>
             </>
@@ -272,7 +331,7 @@ const Home = (props) => {
         locations={[0.1, 0.5, 1]}
         style={{
           width: width,
-          height: 85,
+          height: insets.bottom + 85,
           flexDirection: "row",
           justifyContent: "space-between",
         }}
@@ -284,14 +343,16 @@ const Home = (props) => {
           <Image
             source={require("../assets/buttons/leaderboard-button.png")}
             resizeMode="contain"
-            style={{ width: 60, height: 60, marginTop: 20, marginLeft: 20 }}
+            style={{
+              width: 60,
+              height: 60,
+              marginTop: insets.bottom + 20,
+              marginLeft: 20,
+            }}
           />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => onSubmit("New Task")}
-        >
+        <TouchableOpacity style={styles.button} onPress={() => onSubmit()}>
           <Image
             source={require("../assets/buttons/add-button.png")}
             resizeMode="contain"
@@ -303,7 +364,12 @@ const Home = (props) => {
           <Image
             source={require("../assets/buttons/sign-out-button.png")}
             resizeMode="contain"
-            style={{ width: 60, height: 60, marginTop: 20, marginRight: 20 }}
+            style={{
+              width: 60,
+              height: 60,
+              marginTop: insets.bottom + 20,
+              marginRight: 20,
+            }}
           />
         </TouchableOpacity>
       </LinearGradient>
@@ -311,13 +377,11 @@ const Home = (props) => {
         style={[styles.subView, { transform: [{ translateY: bounceValue }] }]}
       >
         <Pressable
-          onPress={() => {
-            toggleSubview();
-          }}
+          onPress={toggleSubview}
           style={{ flex: 1, backgroundColor: "transparent" }}
-        ></Pressable>
+        />
         <BlurView
-          intensity={100}
+          intensity={75}
           tint="light"
           style={{
             width: width,
@@ -348,10 +412,10 @@ const Home = (props) => {
               />
 
               <Text style={{ fontFamily: "Poppins-Regular" }}>
-                {topThree[1] !== undefined ? topThree[1].name : "N/A"}
+                {topThree[1] !== undefined ? topThree[1].name : ""}
               </Text>
               <Text style={{ fontFamily: "Poppins-Regular" }}>
-                {topThree[1] !== undefined ? topThree[1].currentScore : "N/A"}
+                {topThree[1] !== undefined ? topThree[1].currentScore : ""}
               </Text>
             </View>
 
@@ -363,10 +427,10 @@ const Home = (props) => {
               />
 
               <Text style={{ fontFamily: "Poppins-Regular" }}>
-                {topThree[0] !== undefined ? topThree[0].name : "N/A"}
+                {topThree[0] !== undefined ? topThree[0].name : ""}
               </Text>
               <Text style={{ fontFamily: "Poppins-Regular" }}>
-                {topThree[0] !== undefined ? topThree[0].currentScore : "N/A"}
+                {topThree[0] !== undefined ? topThree[0].currentScore : ""}
               </Text>
             </View>
 
@@ -378,20 +442,18 @@ const Home = (props) => {
               />
 
               <Text style={{ fontFamily: "Poppins-Regular" }}>
-                {topThree[2] !== undefined ? topThree[2].name : "N/A"}
+                {topThree[2] !== undefined ? topThree[2].name : ""}
               </Text>
               <Text style={{ fontFamily: "Poppins-Regular" }}>
-                {topThree[2] !== undefined ? topThree[2].currentScore : "N/A"}
+                {topThree[2] !== undefined ? topThree[2].currentScore : ""}
               </Text>
             </View>
           </View>
         </BlurView>
         <Pressable
-          onPress={() => {
-            toggleSubview();
-          }}
+          onPress={toggleSubview}
           style={{ flex: 5, backgroundColor: "transparent" }}
-        ></Pressable>
+        />
       </Animated.View>
     </View>
   );
@@ -401,7 +463,11 @@ export default Home;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    width: width,
+    height:
+      StatusBarHeight > 24 && Platform.OS === "android"
+        ? height + StatusBarHeight
+        : height,
     backgroundColor: "#E4E7EB",
     justifyContent: "space-between",
   },
@@ -420,6 +486,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: "transparent",
-    height: height,
+    height:
+      StatusBarHeight > 24 && Platform.OS === "android"
+        ? height + StatusBarHeight
+        : height,
   },
 });

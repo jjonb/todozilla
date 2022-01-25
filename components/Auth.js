@@ -21,7 +21,7 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 const Auth = (props) => {
   const [authScreen, setAuthScreen] = useState("Login");
@@ -33,7 +33,7 @@ const Auth = (props) => {
 
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  const { userID, dispatchUserEvent, isLoading, setLoading } = useAuth();
+  const { userID, dispatchUserEvent, isLoading } = useAuth();
 
   //checks userID in real-time and navigates to screen accordingly
   useEffect(() => {
@@ -43,6 +43,7 @@ const Auth = (props) => {
     return () => {};
   }, [userID]);
 
+  //checks to see if keyboard is open/closed; mainly for input visibility
   useEffect(() => {
     Keyboard.addListener("keyboardDidShow", _keyboardDidShow);
     Keyboard.addListener("keyboardDidHide", _keyboardDidHide);
@@ -55,7 +56,7 @@ const Auth = (props) => {
   }, []);
 
   const _keyboardDidShow = (e) =>
-    setKeyboardHeight(e.endCoordinates.height * 0.75);
+    setKeyboardHeight(e.endCoordinates.height * 0.85);
   const _keyboardDidHide = () => setKeyboardHeight(0);
 
   if (isLoading) {
@@ -109,7 +110,7 @@ const Auth = (props) => {
             <MaterialCommunityIcons
               style={{ position: "absolute", left: 10 }}
               name="account-edit-outline"
-              size={30}
+              size={25}
               color="black"
             />
             <TextInput
@@ -117,6 +118,7 @@ const Auth = (props) => {
               onChangeText={setName}
               value={name}
               style={styles.input}
+              autoCapitalize="none"
             />
           </View>
         ) : (
@@ -126,7 +128,7 @@ const Auth = (props) => {
           <MaterialIcons
             style={{ position: "absolute", left: 10 }}
             name="mail-outline"
-            size={30}
+            size={25}
             color="black"
           />
           <TextInput
@@ -134,13 +136,14 @@ const Auth = (props) => {
             placeholder="E-mail"
             onChangeText={setEmail}
             value={email}
+            autoCapitalize="none"
           />
         </View>
         <View style={styles.inputContainer}>
           <Ionicons
             style={{ position: "absolute", left: 10 }}
             name="key-outline"
-            size={30}
+            size={25}
             color="black"
           />
           <TextInput
@@ -149,6 +152,7 @@ const Auth = (props) => {
             placeholder="Password"
             onChangeText={setPassword}
             value={password}
+            autoCapitalize="none"
           />
         </View>
         {authScreen === "Register" ? (
@@ -156,7 +160,7 @@ const Auth = (props) => {
             <Ionicons
               style={{ position: "absolute", left: 10 }}
               name="lock-closed-outline"
-              size={30}
+              size={25}
               color="black"
             />
             <TextInput
@@ -165,6 +169,7 @@ const Auth = (props) => {
               onChangeText={setPasswordCheck}
               value={passwordCheck}
               style={styles.input}
+              autoCapitalize="none"
             />
           </View>
         ) : (
@@ -264,7 +269,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: width * 0.75,
     textAlign: "center",
-    paddingVertical: 5,
+    paddingVertical: 7,
     backgroundColor: "rgba(0,0,0,0)",
     fontSize: 12,
     fontFamily: "Karla-Regular",
