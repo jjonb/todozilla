@@ -5,7 +5,6 @@ import {
   Pressable,
   TouchableOpacity,
   Dimensions,
-  Platform,
 } from "react-native";
 import { ref, update, remove } from "firebase/database";
 import Swipeable from "react-native-gesture-handler/Swipeable";
