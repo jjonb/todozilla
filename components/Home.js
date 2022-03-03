@@ -239,7 +239,10 @@ const Home = (props) => {
           style={{
             width: width,
             marginTop: 15,
-            flex: 1,
+            height:
+              insets.bottom !== 0
+                ? height * 0.8 - insets.bottom - 20
+                : height * 0.8,
           }}
         >
           {tasks.length !== 0 ? (
@@ -258,7 +261,7 @@ const Home = (props) => {
                   width: width,
                   height:
                     completedTasks.length !== 0 || isKeyboardVisible
-                      ? height * 0.28
+                      ? height * 0.3125
                       : height * 0.66,
                   alignItems: "center",
                 }}
@@ -288,7 +291,7 @@ const Home = (props) => {
               <View
                 style={{
                   width: width,
-                  height: tasks.length !== 0 ? height * 0.28 : height * 0.66,
+                  height: tasks.length !== 0 ? height * 0.3125 : height * 0.66,
                   alignItems: "center",
                 }}
               >
@@ -463,11 +466,11 @@ export default Home;
 
 const styles = StyleSheet.create({
   container: {
-    width: width,
-    height:
-      StatusBarHeight > 24 && Platform.OS === "android"
-        ? height + StatusBarHeight
-        : height,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
     backgroundColor: "#E4E7EB",
     justifyContent: "space-between",
   },
